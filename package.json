@@ -1,0 +1,21 @@
+{
+    "name": "openslides_conversations",
+    "private": true,
+    "scripts": {
+        "prepublish": "bower install && gulp"
+    },
+    "devDependencies": {
+        "bower": "~1.8.2",
+        "es6-promise": "~3.2.1",
+        "main-bower-files": "^2.13.1",
+        "jshint": "~2.9.3",
+        "gulp": "~3.9.1",
+        "gulp-if": "^2.0.2",
+        "gulp-angular-gettext": "~2.2.0",
+        "gulp-angular-templatecache": "^2.2.0",
+        "gulp-concat": "^2.6.1",
+        "gulp-uglify": "^2.1.2",
+        "gulp-sourcemaps": "^2.6.0",
+        "yargs": "^7.1.0"
+    }
+}

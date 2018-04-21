@@ -1,0 +1,30 @@
+# Patterns of intentionally untracked files that Git should ignore
+
+# Python compiled files
+*.pyc
+__pycache__/
+
+# Virtual Python Environment builder
+.virtualenv/
+.venv/
+
+# Local user data (settings, database, media, search index, static files)
+personal_data/*
+
+# Javascript tools and libraries
+node_modules/*
+bower_components/*
+yarn*
+
+# Package building
+*.egg-info
+build/*
+dist/*
+
+# Temporary files
+*.swp
+*~
+.DS_Store
+
+# Staticfiles
+static/*
