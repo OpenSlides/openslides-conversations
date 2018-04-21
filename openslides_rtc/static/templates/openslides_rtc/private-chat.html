@@ -1,0 +1,233 @@
+<div ng-controller="OpenSlidesRTCPrivateChatCtrl as Ctrl">
+
+    <div id="hidden">
+        <!-- alert to answer or deny calls -->
+        <div id="incomming-call-alert" class="alert alert-info">
+            <span>{{caller}} want's to open a video chat session with you. Do you accept?</span>
+            <br/>
+            <button class="btn btn-sm" data-dismiss="alert" ng-click="answerCallButton(true)">
+                <i class="fa fa-check"></i>
+            </button>
+            <button class="btn btn-sm" data-dismiss="alert" ng-click="answerCallButton(false)">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>;
+    </div>
+
+    <!-- css here -->
+    <style type="text/css">
+
+        #private-chat-details {
+            padding: 0 !important;
+        }
+
+        #private-chat-details .row {
+            margin: 0px;
+            display: flex;
+        }
+
+        #user-list {
+            flex: 1;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+
+        #user-list-ul {
+            margin: 0 !important;
+        }
+
+        #user-list-ul li {
+            padding: 5px;
+            border-top: 1px solid #d4d5d6;
+            cursor: pointer;
+        }
+
+        #chatWindow {
+            padding: 0px;
+        }
+
+        #chatWindowHead {
+            margin: 0px;
+            padding: 10px;
+            float: left;
+            width: 100%;
+            border-bottom: 1px solid #d4d5d6;
+        }
+
+        #chatWindowHeadLeft {
+            float: left;
+        }
+
+        #chatWindowHeadRight {
+            float: right;
+        }
+
+        #video-control-field {
+            position: relative;
+            display: none;
+            padding: 10px;
+            float: left;
+            width: 100%;
+            border-bottom: 1px solid #d4d5d6;
+            background-color: #000;
+            color: #fff;
+        }
+
+        #video-control-field p {
+            text-align: center;
+        }
+
+        #localVideo {
+            position: absolute;
+            z-index: 12;
+            right: 90px;
+            bottom: 30px;
+            width: 150px;
+        }
+
+        #remoteVideo {
+            z-index: 11;
+            max-width: 700px;
+            /* width: auto;*/
+            /* min-width: 50px; */
+        }
+
+        #privateChatField {
+            float: left;
+            width: 100%;
+            height: 200px;
+            min-width: 50px;
+            padding: 10px;
+            overflow: auto;
+        }
+
+        #private-chat-text-box {
+            float: left;
+            width: 100%
+        }
+
+        #userNotifications {
+            position: absolute;
+            z-index: 4;
+            right: 50px;
+            top: 150px;
+            width: 400px;
+        }
+
+        #private-chat-text-box input {
+            border-radius: 0px;
+            border: 0px;
+            border-top: 1px solid #d4d5d6;
+        }
+
+        #sendMessageButton button {
+            border-radius: 0px;
+            border-color: #d4d5d6;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+            line-height: inherit;
+            border: 0px;
+            border-top: 1px solid #d4d5d6;
+        }
+
+        #hidden {
+            display: none
+        }
+
+        .unreadPM {
+            font-weight: bold;
+        }
+
+    </style>
+    <div class="header">
+        <div class="title">
+            <div class="submenu">
+                <a ui-sref="openslides_rtc_moderated" class="btn btn-sm btn-default">
+                    <i class="fa fa-eye fa-lg"></i>
+                    <translate>Moderated Discussion</translate>
+                </a>
+                <a ui-sref="openslides_rtc_group" class="btn btn-sm btn-default">
+                    <i class="fa fa-users fa-lg"></i>
+                    <translate>Group Conversation</translate>
+                </a>
+            </div>
+            <h1 translate>Private Conversation</h1>
+        </div>
+    </div>
+    <div id="userNotifications"></div>
+    <div class="details" id="private-chat-details">
+        <div class="row">
+
+            <!-- user list  -->
+
+            <div class="col-sm-3" id="user-list">
+                <label>
+                    <translate> Contacts: </translate>
+                </label>
+                <br />
+                <ul class="list-unstyled" id="user-list-ul">
+                </ul>
+            </div>
+
+            <!-- chat window -->
+
+            <div class="col-sm-9" id="chatWindow">
+
+                <!-- chat head -->
+                <div id="chatWindowHead">
+                    <div id="chatWindowHeadLeft">
+                        <label>
+                            <translate> Communication with: </translate>
+                        </label>
+                        <span> {{connectionName}} </span>
+                    </div>
+
+                    <div id="chatWindowHeadRight">
+
+                        <!-- phone button -->
+                        <!-- <button class="btn btn-sm" ng-class="$parent.isSelectMode ? 'btn-primary' : 'btn-default'" ng-click="videoCallButton()">
+                            <i class="fa fa-phone"></i>
+                        </button> -->
+
+                        <!-- video phone button -->
+                        <button class="btn btn-sm" ng-class="$parent.isSelectMode ? 'btn-primary' : 'btn-default'" ng-click="videoCallButton()">
+                            <i class="fa fa-video-camera"></i>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- video chat field  -->
+
+                <div id="video-control-field">
+                    <label>Video: </label>
+                    <p>
+                        <video id="remoteVideo" autoplay muted></video>
+                        <video id="localVideo" autoplay muted></video>
+                    </p>
+                    <button class="btn btn-sm" ng-class="$parent.isSelectMode ? 'btn-primary' : 'btn-default'" ng-click="videoHangUpButton()">
+                            <i class="fa fa-phone-square "></i>
+                    </button>
+                </div>
+
+                <!-- private chat field -->
+
+                <div id="privateChatField"></div>
+
+                <!-- chat input field  -->
+
+                <div class="input-group"id="private-chat-text-box" >
+                    <input type="text" class="form-control" id="private-chat-input" placeholder="Type your message here..." >
+                    <span class="input-group-btn" id="sendMessageButton">
+                        <button class="btn btn-default"
+                            type="button"
+                            ng-click="sendMessageButton()">
+                            <i class="fa fa-play"></i>
+                        </button>
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
