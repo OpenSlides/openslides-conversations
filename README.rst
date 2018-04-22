@@ -1,6 +1,4 @@
-===========================
- OpenSlides Conversations Plugin
-===========================
+OpenSlides Conversations Plugin
 
 Overview
 ========
