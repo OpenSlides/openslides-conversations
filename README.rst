@@ -1,6 +1,4 @@
-===========================
- OpenSlides RTC Plugin
-===========================
+OpenSlides Conversations Plugin
 
 Overview
 ========

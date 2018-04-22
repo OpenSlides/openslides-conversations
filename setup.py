@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
-package_name = 'openslides_rtc'
-module_name = 'openslides_rtc'
+package_name = 'openslides_conversations'
+module_name = 'openslides_conversations'
 
 module = __import__(module_name)
 

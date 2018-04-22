@@ -1,5 +1,5 @@
 {
-    "name": "openslides-rtc",
+    "name": "openslides_conversations",
     "private": true,
     "scripts": {
         "prepublish": "bower install && gulp"

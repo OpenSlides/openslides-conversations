@@ -1,5 +1,5 @@
 {
-  "name": "openslides-rtc",
+  "name": "openslides_conversations",
   "private": true,
   "dependencies": {
     "simple-peer": "https://github.com/feross/simple-peer.git#461ed97509e4b2ec10944510802703e47101126b",

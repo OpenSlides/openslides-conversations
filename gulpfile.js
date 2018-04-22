@@ -20,7 +20,7 @@ var gulp = require('gulp'),
 gulp.task('templates', function () {
     return gulp.src(path.join('**', 'static', 'templates', '**', '*.html'))
         .pipe(templateCache('templates.js', {
-            module: 'OpenSlidesApp.openslides_rtc.templates',
+            module: 'OpenSlidesApp.openslides_conversations.templates',
             standalone: true,
             moduleSystem: 'IIFE',
             transformUrl: function (url) {
@@ -29,7 +29,7 @@ gulp.task('templates', function () {
                 return pathList.join(path.sep);
             },
         }))
-        .pipe(gulp.dest(path.join('static', 'js', 'openslides_rtc')));
+        .pipe(gulp.dest(path.join('static', 'js', 'openslides_conversations')));
 });
 
 // Catches all JavaScript files from all bower components and concats them to
@@ -39,20 +39,20 @@ gulp.task('js-libs', function () {
             filter: /\.js$/
         }))
         .pipe(sourcemaps.init())
-        .pipe(concat('openslides-peer.js')) //todo rename
+        .pipe(concat('openslides-conversations.js'))
         .pipe(sourcemaps.write())
         .pipe(gulpif(argv.production, uglify()))
-        .pipe(gulp.dest(path.join('static', 'js', 'openslides_rtc')));
+        .pipe(gulp.dest(path.join('static', 'js', 'openslides_conversations')));
         // .pipe(gulp.dest(path.join(output_directory, 'js')));
 });
 
 // Compiles translation files (*.po) to *.json and saves them in the directory 'i18n'.
 gulp.task('translations', function () {
-    return gulp.src(path.join('openslides_rtc', 'locale', 'angular-gettext', '*.po'))
+    return gulp.src(path.join('openslides_conversations', 'locale', 'angular-gettext', '*.po'))
         .pipe(gettext.compile({
             format: 'json'
         }))
-        .pipe(gulp.dest(path.join('static', 'i18n', 'openslides_rtc')));
+        .pipe(gulp.dest(path.join('static', 'i18n', 'openslides_conversations')));
 });
 
 // Gulp default task. Runs all other tasks before.
@@ -73,18 +73,18 @@ gulp.task('default', ['translations', 'templates', 'js-libs'], function () {});
 // locale/angular-gettext/template-en.pot.
 gulp.task('pot', function () {
     return gulp.src([
-            'openslides_rtc/static/templates/*/*.html',
-            'openslides_rtc/static/js/*/*.js',
+            'openslides_conversations/static/templates/*/*.html',
+            'openslides_conversations/static/js/*/*.js',
         ])
         .pipe(gettext.extract('template-en.pot', {}))
-        .pipe(gulp.dest(path.join('openslides_rtc', 'locale', 'angular-gettext')));
+        .pipe(gulp.dest(path.join('openslides_conversations', 'locale', 'angular-gettext')));
 });
 
 // Checks JavaScript using JSHint
 gulp.task('jshint', function () {
     return gulp.src([
             'gulpfile.js',
-            path.join('openslides_rtc', 'static', 'js', 'openslides_rtc', '*.js'),
+            path.join('openslides_conversations', 'static', 'js', 'openslides_conversations', '*.js'),
         ])
         .pipe(jshint())
         .pipe(jshint.reporter('default'))
