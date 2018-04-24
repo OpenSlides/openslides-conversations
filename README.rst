@@ -20,16 +20,17 @@ This is only an example instruction to install the plugin on GNU/Linux. It
 can also be installed as any other Python package and on other platforms,
 e. g. on Windows.
 
-Change to a new directory::
+Clone and build the plugin::
 
-    $ cd
+    $ git clone https://github.com/OpenSlides/openslides-conversations.git
 
-    $ mkdir OpenSlides
+    $ cd openslides-conversations
+
+    $ yarn 
+
+Install the plugin in a working OpenSlides setup::
 
     $ cd OpenSlides
-
-Setup and activate a virtual environment and install OpenSlides and the
-plugin in it::
 
     $ python3 -m venv .virtualenv
 
