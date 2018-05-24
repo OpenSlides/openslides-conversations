@@ -228,7 +228,7 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
             var peerConfig = {
                 initiator: offer,
                 stream: stream,
-                reconnectTimer: 300,
+                reconnectTimer: 1000,
                 iceTransportPolicy: 'relay',
                 tickle: true,
                 config: iceServerConfig
@@ -307,7 +307,7 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
                 //register incomming audio Streams to the remoteAudioStreams
                 if(media == "audio") {
                     newUserNotification("Incomming Audio Stream from " + peerName, "success");
-                    console.log('set stream for: ' , remoteAudioStreams[peerName]);
+                    console.log('set stream for: ' , peerName);
                     remoteAudioStreams[peerName].srcObject = stream;
                 }
             });
@@ -419,9 +419,6 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
     'MediaAccess',
     'PeerConnection',
     function ($timeout, operator, Notify, Messaging, MediaAccess, PeerConnection) {
-
-        var localVideo;
-
         // notifications
         // exchange of signalling information
         // var peer will be a new client if first called
@@ -435,34 +432,14 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
 
         //function to start a chat, video or call
         function startCommunication(target, name, media, intial, signal) {
-        //function connectToClient(id, name, offer, stream, media) {
-            //get the right constraints
-            var constraints
-            if (media == "video") {
-                constraints = MediaAccess.constraints.audioVideo;
-            } else if (media == "audio") {
-                constraints = MediaAccess.constraints.audioOnly;
+            // new version of feross will support renogitation
+            if (PeerConnection.isClientConnectionActive(target) && (media == "video" || media == "audio")) {
+                PeerConnection.disconnectFromClient(target);
             }
 
-            if (media == "video" || media == "audio") {
-                if (PeerConnection.isClientConnectionActive(target)) { // new version of feross will support renogitation
-                    PeerConnection.disconnectFromClient(target);
-                }
-                MediaAccess.getMediaClient(constraints).then(function() {
-                    if (media == "video") {
-                        localVideo.srcObject = window.localStream;
-                    }
-                    var peer = PeerConnection.connectToClient(target, name, intial, window.localStream, media);
-                    if (!intial) {
-                        peer.signal(signal);
-                    }
-                });
-            } else {
-                //case for chat or stream. for Window.localstream will simply be null 
-                var peer = PeerConnection.connectToClient(target, name, intial, window.localStream, media);
-                if (!intial) {
-                    peer.signal(signal);
-                }
+            var peer = PeerConnection.connectToClient(target, name, intial, window.localStream, media);
+            if (!intial) {
+                peer.signal(signal);
             }
         }
 
@@ -518,6 +495,7 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
             if(peer.stream && peer.connected) {
                 PeerConnection.disconnectFromClient(target);
                 $timeout(function () {
+                    //new version of simplepeer will support adding and removing streams
                     startCommunication(target, name, "chat", true);
                 }, 500);
             }
@@ -543,11 +521,6 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
             });
         }
 
-        //register the local Video in the factory
-        function registerLocalVideo(video) {
-            localVideo = video;
-        }
-
         return {
             startCommunication: startCommunication,
             chatInputEnterKeyHandler: chatInputEnterKeyHandler,
@@ -556,7 +529,6 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
             hangUpPrivateCall: hangUpPrivateCall,
             addGuiMessage: addGuiMessage,
             addMessagesToChatField: addMessagesToChatField,
-            registerLocalVideo: registerLocalVideo
         }
     }
 ])
@@ -871,17 +843,18 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
     function ($scope, $timeout, MediaAccess, PeerConnection, PeerCommunication, RtcRegister, Notify, operator) {
         var channels = null;
         $scope.connectedChannel = ""
-        var currentConnectionIds = []; //holds the ID's if all users we are currently connected with. For sending messages to a group.
+        var currentConnectionIds = []; //holds the ID's of all users we are currently connected with. For sending messages to a group.
 
         //notifications
         var updateChannelsCallback = Notify.registerCallback("update_channels" , function (notify) {
             if (!notify.sendBySelf) {
-                updateChannelList();
-                if($scope.connectedChannel === notify.params.channel) {
-                    PeerCommunication.addGuiMessage(""+notify.params.name + " joined your channel", "info");
-                    currentConnectionIds.push(notify.params.id);
-                    PeerConnection.registerAudioField($("#audio-"+notify.params.name)[0], notify.params.name);
-                }
+                updateChannelList().then(function (params) {
+                    if($scope.connectedChannel === notify.params.channel) {
+                        PeerCommunication.addGuiMessage(""+notify.params.name + " joined your channel", "info");
+                        currentConnectionIds.push(notify.params.id);
+                        PeerConnection.registerAudioField($("#audio-"+notify.params.name)[0], notify.params.name);
+                    } 
+                });
             }
         });
 
@@ -925,30 +898,32 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
         //register to a speech channel
         //If the channel dies not exist it will be created on the server
         function registerToSpeechChannel(channelName) {
-            //register on the python server
-            RtcRegister.switchChannel(channelName); //TODO function for channels
-            //remove all currently active peer connections
-            PeerConnection.disconnectAllClients();
-            updateChannelList().then(function () {
+                //register on the python server
+                RtcRegister.switchChannel(channelName); //TODO function for channels
+                //remove all currently active peer connections
+                PeerConnection.disconnectAllClients();
+                updateChannelList().then(function () {
+                    RtcRegister.getRtcUserList("group_conversations").then(function (httpResponse) {
+                        Notify.notify( "update_channels", {
+                            name: operator.user.username,
+                            id: operator.user.id,
+                            channel: channelName
+                        }, httpResponse.list );
+                    });
 
-                RtcRegister.getRtcUserList("group_conversations").then(function (httpResponse) {
-                    Notify.notify( "update_channels", {
-                        name: operator.user.username,
-                        id: operator.user.id,
-                        channel: channelName
-                    }, httpResponse.list );
+                    //save or remove the channel name. Not friendy for reloading the page
+                    if($scope.connectedChannel !== channelName) {
+                        $scope.connectedChannel = channelName;
+                        MediaAccess.getMediaClient(MediaAccess.constraints.audioOnly).then(function () {
+                            PeerCommunication.addGuiMessage("Connected to " + channelName, "info");
+                            connectToChannelUsers(channelName)
+                        });
+                    } else {
+                        $scope.connectedChannel = "";
+                        PeerCommunication.addGuiMessage("You left " + channelName, "info");
+                        MediaAccess.stopMedia();
+                    }
                 });
-
-                //save or remove the channel name
-                if($scope.connectedChannel !== channelName) {
-                    $scope.connectedChannel = channelName;
-                    PeerCommunication.addGuiMessage("Connected to " + channelName, "info");
-                    connectToChannelUsers(channelName)
-                } else {
-                    $scope.connectedChannel = "";
-                    PeerCommunication.addGuiMessage("You left " + channelName, "info");
-                }
-            });   
         }
 
         //Establishes multiple peer connections with every single channel user
@@ -1138,8 +1113,10 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
             if(doDisplay) {
                 console.log('try to display field');
                 videoControlField.css("display", "inline");
+                $("#localVideo")[0].srcObject = window.localStream;
             } if (!doDisplay) {
                 videoControlField.css("display", "none");
+                $("#localVideo")[0].srcObject = null;
             }
         }
 
@@ -1164,10 +1141,9 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
                 RtcRegister.rtcLogin("private_conversations").success( function(httpResponse) {
                     populateUserList(httpResponse);
                     Notify.notify("refresh_user_list");
-                });;
+                });
     
-                //register local and remote video HTML object in Factory
-                PeerCommunication.registerLocalVideo($("#localVideo")[0]);
+                //register remote video HTML object in Factory
                 PeerConnection.registerVideoField($("#remoteVideo")[0]);
             } else {
                 PeerCommunication.addGuiMessage("Your Browser does not support WebRTC.", "error");
@@ -1182,8 +1158,11 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
         //start video connection
         $scope.videoCallButton = function() {
             if (chatPartner.id > 0 ) {
-                showVideoField(true);
-                getCallConsent(chatPartner.id);
+                //get the Media and pass it to startCommunication directly. window.localStream is our video now
+                MediaAccess.getMediaClient(MediaAccess.constraints.audioVideo).then(function () {
+                    showVideoField(true);
+                    getCallConsent(chatPartner.id);
+                });
             } else {
                 console.log("No Partner selected");
             }
@@ -1192,14 +1171,19 @@ angular.module('OpenSlidesApp.openslides_conversations.site', [
         //button so answer a call
         $scope.answerCallButton = function(consent) {
             if ($scope.caller) {
-                if (consent) {
-                    showVideoField(true);
-                }
-                Notify.notify("callRequestAnswer", {
+                var requestAnswerObject = {
                     id: operator.user.id,
                     name: operator.user.username,
                     answer: consent
-                }, [$scope.callerId]);
+                };
+                if (consent) {
+                    MediaAccess.getMediaClient(MediaAccess.constraints.audioVideo).then(function () {
+                        showVideoField(true);
+                        Notify.notify("callRequestAnswer", requestAnswerObject, [$scope.callerId]);
+                    });
+                } else {
+                    Notify.notify("callRequestAnswer", requestAnswerObject, [$scope.callerId]);
+                }
             }
         }
 
